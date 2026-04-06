@@ -1,0 +1,6 @@
+.DS_Store
+*.bak
+node_modules/
+meetings.db
+meetings.db-wal
+meetings.db-shm

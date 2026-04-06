@@ -1,0 +1,347 @@
+{
+  "clients": {
+    "Suez": {
+      "wikilink": "[[Suez]]",
+      "aliases": [
+        "suez",
+        "suez eau france",
+        "suez group"
+      ]
+    },
+    "Culturalia": {
+      "wikilink": "[[Culturalia]]",
+      "aliases": [
+        "culturalia",
+        "coolturalia"
+      ]
+    },
+    "Sonepar": {
+      "wikilink": "[[Sonepar]]",
+      "aliases": [
+        "sonepar"
+      ]
+    },
+    "Talisker": {
+      "wikilink": "[[Talisker]]",
+      "aliases": [
+        "talisker"
+      ]
+    },
+    "LumAI": {
+      "wikilink": "[[LumAI]]",
+      "aliases": [
+        "lumai",
+        "lumai consulting"
+      ]
+    }
+  },
+  "projects": {
+    "Mission Suez - Catalyste IA": {
+      "wikilink": "[[Mission Suez - Catalyste IA]]",
+      "client": "Suez",
+      "aliases": [
+        "ai factory",
+        "mission suez",
+        "catalyste ia",
+        "catalyste"
+      ],
+      "status": "active",
+      "start_date": "2025-12-01"
+    }
+  },
+  "contacts": {
+    "Arnaud Vergnol": {
+      "aliases": [
+        "arnaud",
+        "arnaud verniolle"
+      ],
+      "client": "Suez",
+      "calendar_email": "arnaud.vergnol@suez.com"
+    },
+    "François Pary": {
+      "aliases": [
+        "francois pary",
+        "francois",
+        "françois"
+      ],
+      "client": "Suez",
+      "calendar_email": "francois.pary@suez.com"
+    },
+    "François Baudhuin": {
+      "aliases": [
+        "francois baudhuin",
+        "francois (immobilier)"
+      ],
+      "client": "Suez",
+      "calendar_email": "francois.baudhuin@suez.com"
+    },
+    "Sandrine Batista": {
+      "aliases": [
+        "sandrine",
+        "sandrine baptista"
+      ],
+      "client": "Suez",
+      "calendar_email": "sandrine.batista.ext@suez.com"
+    },
+    "Kylliann De Santiago": {
+      "aliases": [
+        "kylian",
+        "kylian de santiago",
+        "kylliann",
+        "kelian"
+      ],
+      "client": "Suez",
+      "calendar_email": "kylliann.desantiago.ext@suez.com"
+    },
+    "Emma Erre": {
+      "aliases": [
+        "emma",
+        "emma erre"
+      ],
+      "client": "Suez",
+      "calendar_email": "emma.erre.ext@suez.com"
+    },
+    "Gabriel Depotte": {
+      "aliases": [
+        "gabriel",
+        "gabriel depotte",
+        "gabriel lepat",
+        "gabrielle"
+      ],
+      "client": "Suez",
+      "calendar_email": "gabriel.depotte@suez.com"
+    },
+    "Nathalie Kababa": {
+      "aliases": [
+        "nathalie"
+      ],
+      "client": "Suez",
+      "calendar_email": "nathalie.kababa.ext@suez.com"
+    },
+    "Laurent Touzé": {
+      "aliases": [
+        "laurent",
+        "laurent touze"
+      ],
+      "client": "Suez"
+    },
+    "Kevin Boquet": {
+      "aliases": [
+        "kevin"
+      ],
+      "client": "Suez"
+    },
+    "David Martin": {
+      "aliases": [
+        "david"
+      ],
+      "client": "Suez"
+    },
+    "Pierre Lugez": {
+      "aliases": [
+        "pierre"
+      ],
+      "client": "Suez"
+    },
+    "Laetitia Poisson": {
+      "aliases": [
+        "leticia",
+        "laetitia",
+        "laetitia poisson"
+      ],
+      "client": "Suez",
+      "calendar_email": "laetitia.poisson@suez.com"
+    },
+    "Romain Guimonet": {
+      "aliases": [
+        "romain"
+      ],
+      "client": "Suez"
+    },
+    "Salim Laimeche": {
+      "aliases": [
+        "salim"
+      ],
+      "client": "Suez",
+      "calendar_email": "salim.laimeche.ext@suez.com"
+    },
+    "Céline Merle": {
+      "aliases": [
+        "celine",
+        "céline"
+      ],
+      "client": "Suez",
+      "calendar_email": "celine.merle@suez.com"
+    },
+    "Estelle Baulot": {
+      "aliases": [
+        "estelle"
+      ],
+      "client": "Suez"
+    },
+    "Olivier Guilleminot": {
+      "aliases": [],
+      "client": "Suez"
+    },
+    "Olivier Perraudin": {
+      "aliases": [],
+      "client": "Suez"
+    },
+    "Gerald Audenis": {
+      "aliases": [
+        "gerald",
+        "gérald"
+      ],
+      "client": "Suez"
+    },
+    "Isabelle Galembert": {
+      "aliases": [
+        "isabelle"
+      ],
+      "client": "Suez"
+    },
+    "Laura Elie": {
+      "aliases": [
+        "laura"
+      ],
+      "client": "Suez"
+    },
+    "Sébastien Raynaut": {
+      "aliases": [
+        "sebastien",
+        "sébastien"
+      ],
+      "client": "Suez"
+    },
+    "Thibault Delys": {
+      "aliases": [
+        "thibault"
+      ],
+      "client": "Suez"
+    },
+    "Alain Rabier": {
+      "aliases": [
+        "alain"
+      ],
+      "client": "Suez",
+      "calendar_email": "alain.rabier@suez.com"
+    },
+    "Patrice Couedel": {
+      "aliases": [
+        "patrice",
+        "patrice coadel"
+      ],
+      "client": "Suez"
+    },
+    "Mickael Huguenin": {
+      "aliases": [
+        "mickael",
+        "mickaël"
+      ],
+      "client": "Suez"
+    },
+    "Fanélie Escarra André": {
+      "aliases": [
+        "fanelie",
+        "fredeilie",
+        "fanélie",
+        "fanelie escarra andre"
+      ],
+      "client": "Suez",
+      "calendar_email": "fanelie.escarraandre@suez.com"
+    },
+    "Ferdaousse Rafiki": {
+      "aliases": [
+        "ferdaousse"
+      ],
+      "client": "Suez",
+      "calendar_email": "ferdaousse.rafiki@suez.com"
+    },
+    "Aude Missana": {
+      "aliases": [
+        "aude"
+      ],
+      "client": "Suez",
+      "calendar_email": "aude.missana.ext@suez.com"
+    },
+    "Ilan Gabay": {
+      "aliases": [
+        "ilan"
+      ],
+      "client": "Suez",
+      "calendar_email": "ilan.gabay.ext@suez.com"
+    },
+    "Florian Denis": {
+      "aliases": [
+        "florian"
+      ],
+      "client": null,
+      "calendar_email": "florian.denis@colibee.com"
+    },
+    "Omrane Senouci": {
+      "aliases": [
+        "omrane",
+        "oman",
+        "omran"
+      ],
+      "client": null,
+      "is_self": true,
+      "calendar_email": "omrane.senouci.ext@suez.com"
+    },
+    "Raphael Tordjman": {
+      "aliases": [],
+      "client": null
+    },
+    "Sebastien Cromback": {
+      "aliases": [],
+      "client": null
+    },
+    "Samir Yahou": {
+      "aliases": [],
+      "client": null
+    },
+    "Virgil Charmet": {
+      "aliases": [],
+      "client": "Suez"
+    },
+    "Thomas Billot": {
+      "aliases": [],
+      "client": "Suez"
+    },
+    "Guillaume Lévy": {
+      "aliases": [],
+      "client": "Suez"
+    },
+    "Guillaume Digoin": {
+      "aliases": [],
+      "client": "Suez"
+    },
+    "Matthieu Baille": {
+      "aliases": [
+        "mathieu",
+        "matthieu baille",
+        "mathieu baille"
+      ],
+      "client": "Suez"
+    },
+    "Cyrielle Krigel": {
+      "aliases": [],
+      "client": "Suez"
+    }
+  },
+  "meeting_types": [
+    "discovery",
+    "proposal",
+    "kickoff",
+    "working-session",
+    "coordination",
+    "workshop",
+    "steering",
+    "relationship",
+    "internal"
+  ],
+  "meta": {
+    "generated_at": "2026-04-06",
+    "source": "vault scan + calendar email enrichment"
+  }
+}
