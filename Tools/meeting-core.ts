@@ -149,6 +149,31 @@ export function loadCanonicalEntities(): CanonicalEntities {
 }
 
 // ============================================================================
+// --- Template Engine ---
+// ============================================================================
+
+const TEMPLATES_DIR = join(import.meta.dir, "../Data/templates");
+
+/**
+ * Load a template file from Data/templates/{name}.md.
+ * Templates use {{placeholder}} markers for dynamic values.
+ */
+export function loadTemplate(name: string): string {
+  const path = join(TEMPLATES_DIR, name + ".md");
+  if (!existsSync(path)) {
+    throw new Error(`Template not found: ${path}`);
+  }
+  return readFileSync(path, "utf-8");
+}
+
+/**
+ * Render a template by replacing {{key}} placeholders with values.
+ */
+export function renderTemplate(template: string, vars: Record<string, string>): string {
+  return template.replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key] ?? "");
+}
+
+// ============================================================================
 // --- Utility Functions ---
 // ============================================================================
 
@@ -1655,6 +1680,7 @@ export function createUCStubs(
 
   const entities = loadCanonicalEntities();
   const today = new Date().toISOString().slice(0, 10);
+  const template = loadTemplate("uc-stub");
 
   for (const rawUC of useCases) {
     // Normalize: strip "UC — ", "UC -- ", "UC - " prefix and wikilink syntax if present
@@ -1675,51 +1701,40 @@ export function createUCStubs(
       continue;
     }
 
-    // Also check if file exists elsewhere in vault (search by name)
-    const altPaths = [
-      join(VAULT_BASE, "20 - Projects", fileName),
-    ];
-    if (altPaths.some(p => existsSync(p))) {
+    // Cross-project duplicate check: scan ALL project UC dirs
+    const projectsRoot = join(VAULT_BASE, "20 - Projects");
+    let foundElsewhere = false;
+    if (existsSync(projectsRoot)) {
+      const normalizedTarget = norm(safeName);
+      for (const proj of readdirSync(projectsRoot, { withFileTypes: true })) {
+        if (!proj.isDirectory()) continue;
+        const ucSubdir = join(projectsRoot, proj.name, "Use Cases");
+        if (!existsSync(ucSubdir)) continue;
+        // Check exact filename
+        if (existsSync(join(ucSubdir, fileName))) { foundElsewhere = true; break; }
+        // Check accent-normalized variant
+        for (const f of readdirSync(ucSubdir)) {
+          if (!f.endsWith(".md")) continue;
+          const existingName = f.replace(/^UC\s*[—–-]{1,2}\s*/i, "").replace(/\.md$/, "");
+          if (norm(existingName) === normalizedTarget) { foundElsewhere = true; break; }
+        }
+        if (foundElsewhere) break;
+      }
+    }
+    if (foundElsewhere) {
       skipped.push(ucName);
       continue;
     }
 
-    // Build stub from Convention de Notes UC schema
+    // Render template
     const projectWikilink = projectName
       ? resolveProjectWikilink(projectName, clientName || "", entities)
       : "";
-    const projectField = projectWikilink
-      ? `project: "${projectWikilink}"`
-      : `project: ""`;
-
-    const stub = [
-      "---",
-      "type: use-case",
-      projectField,
-      'function: ""',
-      "status: besoin",
-      'owner: ""',
-      "decision: null",
-      `created: ${today}`,
-      "---",
-      "",
-      `# UC — ${ucName}`,
-      "",
-      "## Résumé",
-      "",
-      "*À compléter après le premier échange.*",
-      "",
-      "## AIQ Qualification",
-      "",
-      "> En attente de qualification.",
-      "",
-      "## Historique des échanges",
-      "",
-      "## Notes & Décisions",
-      "",
-      "## Prochaines étapes",
-      "",
-    ].join("\n");
+    const stub = renderTemplate(template, {
+      project: projectWikilink,
+      created: today,
+      ucName: ucName,
+    });
 
     require("fs").writeFileSync(filePath, stub);
     created.push(ucName);
@@ -1772,25 +1787,14 @@ export function createContactStubs(
     // Resolve company wikilink
     const companyWikilink = clientName
       ? resolveClientWikilink(clientName, entities)
-      : '""';
+      : "";
 
-    const stub = [
-      "---",
-      "type: contact",
-      `company: "${companyWikilink}"`,
-      'role: ""',
-      "---",
-      "",
-      `# ${name}`,
-      "",
-      "## Bio",
-      `- Entreprise : ${companyWikilink}`,
-      "- Rôle : ",
-      "- Contexte : ",
-      "",
-      "## Notes",
-      "",
-    ].join("\n");
+    // Render template
+    const template = loadTemplate("contact-stub");
+    const stub = renderTemplate(template, {
+      company: companyWikilink,
+      name: name,
+    });
 
     require("fs").writeFileSync(filePath, stub);
     created.push(name);

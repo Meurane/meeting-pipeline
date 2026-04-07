@@ -452,6 +452,77 @@ function suggestCanonicalAdditions(rules: AuditRules): EntitySuggestion[] {
 }
 
 // ============================================================================
+// --- Duplicate UC Detection ---
+// ============================================================================
+
+/**
+ * Scan all project UC directories for duplicate UC notes.
+ * Detects accent-variants (same name after NFD normalization) and cross-project duplicates.
+ */
+function auditDuplicateUCs(): AuditIssue[] {
+  const issues: AuditIssue[] = [];
+  const ucIndex = new Map<string, { name: string; path: string; project: string }[]>();
+
+  if (!existsSync(PROJECTS_DIR)) return issues;
+
+  for (const proj of readdirSync(PROJECTS_DIR, { withFileTypes: true })) {
+    if (!proj.isDirectory()) continue;
+    const ucDir = join(PROJECTS_DIR, proj.name, "Use Cases");
+    if (!existsSync(ucDir)) continue;
+
+    for (const file of readdirSync(ucDir)) {
+      if (!file.endsWith(".md")) continue;
+      if (!file.startsWith("UC")) continue;
+
+      // Extract UC name from filename
+      const ucName = file
+        .replace(/^UC\s*[—–]+\s*/i, "")
+        .replace(/^UC\s*-{1,2}\s*/i, "")
+        .replace(/\.md$/, "")
+        .trim();
+      if (!ucName) continue;
+
+      const normalized = norm(ucName);
+      const entry = { name: ucName, path: join(ucDir, file), project: proj.name };
+
+      const existing = ucIndex.get(normalized) || [];
+      existing.push(entry);
+      ucIndex.set(normalized, existing);
+    }
+  }
+
+  // Emit issues for groups with 2+ entries
+  for (const [normalizedName, entries] of ucIndex) {
+    if (entries.length < 2) continue;
+
+    const projects = new Set(entries.map(e => e.project));
+    const names = new Set(entries.map(e => e.name));
+
+    let rootCause: string;
+    if (projects.size > 1 && names.size === 1) {
+      rootCause = `Cross-project duplicate: same UC "${entries[0].name}" in ${[...projects].join(", ")}`;
+    } else if (names.size > 1) {
+      rootCause = `Accent variant: ${[...names].map(n => `"${n}"`).join(" vs ")}`;
+    } else {
+      rootCause = `Cross-project duplicate: same UC in ${[...projects].join(", ")}`;
+    }
+
+    const filePaths = entries.map(e => e.path.replace(PROJECTS_DIR + "/", ""));
+
+    issues.push({
+      file: filePaths[0],
+      category: "duplicate_uc",
+      severity: "warning",
+      message: `Duplicate UC (${entries.length} copies): ${filePaths.join(" | ")}`,
+      rootCause,
+      autoFixable: false,
+    });
+  }
+
+  return issues;
+}
+
+// ============================================================================
 // --- Report Generation ---
 // ============================================================================
 
@@ -586,6 +657,11 @@ function main() {
 
     allIssues.push(...issues);
   }
+
+  // Duplicate UC detection (vault-wide, not per-note)
+  console.log("Checking for duplicate UC notes...");
+  const duplicateIssues = auditDuplicateUCs();
+  allIssues.push(...duplicateIssues);
 
   // Suggestions
   let suggestions: EntitySuggestion[] = [];
