@@ -75,10 +75,23 @@ For each new entity detected, ask user via AskUserQuestion:
 - Skip → project field stored as raw string
 
 **New Use Case:** "Nouveau UC détecté: {name} (confidence: {conf}). L'ajouter ?"
-- Approve → UC wikilink included in CR, note created later by AIQ Extraction
+- Approve → UC wikilink included in CR, stub note created immediately
 - Skip → UC excluded from CR frontmatter
 
 Only proceed to enablers after ALL entity confirmations are resolved.
+
+### Step 2c: Create UC stubs (MANDATORY)
+
+After entity confirmations, create stub notes for all confirmed use cases:
+```bash
+bun -e "
+import {createUCStubs} from '$TOOLS_DIR/meeting-core';
+const ucs = CONFIRMED_USE_CASES.map(uc => typeof uc === 'string' ? uc : uc.name);
+const result = createUCStubs(ucs, ROUTING_OUTPUT.project || null, ROUTING_OUTPUT.client || null);
+console.log(JSON.stringify(result));
+"
+```
+This ensures UC wikilinks in the CR resolve to actual notes, regardless of whether AIQ Extraction runs.
 
 ### Step 3: Resolve project_phase
 
@@ -173,11 +186,18 @@ Pipeline complete:
 
 ### Step 5b: Contact stubs
 
-After CR Obsidian, create stub notes for unknown participants:
-- Read `participants` from CR frontmatter
-- For each `[[Name]]`: check if `{VAULT}/16 - People/{Name}.md` exists
-- If not, create stub (type: contact, company from routing, role blank)
-- Skip Omrane Senouci (self)
+After CR Obsidian, create stub notes for unknown participants programmatically:
+```bash
+bun -e "
+import {createContactStubs} from '$TOOLS_DIR/meeting-core';
+const result = createContactStubs(ROUTING_OUTPUT.participants || [], ROUTING_OUTPUT.client || null);
+console.log(JSON.stringify(result));
+"
+```
+Then sync all People notes with latest canonical data:
+```bash
+bun $TOOLS_DIR/people-sync.ts sync
+```
 
 ### Step 6: Follow-up
 

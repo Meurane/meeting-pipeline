@@ -1,0 +1,31 @@
+{
+  "valid_meeting_types": [
+    "discovery", "proposal", "kickoff", "working-session",
+    "coordination", "workshop", "steering", "relationship", "internal"
+  ],
+  "valid_project_phases": [
+    "besoin", "discovery", "qualification", "proposition",
+    "cadrage", "delivery", "mesure"
+  ],
+  "tags_whitelist": [
+    "meeting", "discovery", "proposal", "kickoff", "working-session",
+    "coordination", "workshop", "steering", "relationship", "internal"
+  ],
+  "required_frontmatter_fields": [
+    "type", "date", "client", "meeting_type", "participants"
+  ],
+  "stub_templates": {
+    "people": {
+      "type": "contact",
+      "company": "",
+      "role": ""
+    },
+    "use_case": {
+      "type": "use-case",
+      "status": "besoin",
+      "decision": "null"
+    }
+  },
+  "self_names": ["Omrane Senouci", "omrane", "oman", "omran"],
+  "recurring_threshold": 3
+}

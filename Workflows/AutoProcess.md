@@ -124,6 +124,18 @@ Follow these steps exactly. Track each enabler in the DB as you go.
 - If new entities: `queueEntityQuestions()` + Discord notification
 - Processing continues regardless
 
+### 3b. Create UC stubs (MANDATORY)
+After routing, create stub notes for any use cases that don't exist in the vault yet:
+```bash
+bun -e "
+import {createUCStubs} from '$TOOLS_DIR/meeting-core';
+const ucs = ROUTING_OUTPUT.use_cases.map(uc => typeof uc === 'string' ? uc : uc.name);
+const result = createUCStubs(ucs, ROUTING_OUTPUT.project || null, ROUTING_OUTPUT.client || null);
+console.log(JSON.stringify(result));
+"
+```
+This ensures UC wikilinks in the CR resolve to actual notes, even when AIQ Extraction is skipped.
+
 ### 4. Confidence gate
 - `is_meeting = false` → transition to 'skipped', STOP
 - `confidence < 0.9` AND no calendar data → transition to 'error', STOP
@@ -147,9 +159,21 @@ Transition to 'processing'. Read each enabler prompt from vault. Call Inference 
 For each enabler: `setEnabler('{meeting_id}', '{enabler_name}', 'done'|'skipped'|'failed')`
 
 ### 6. Finalize
-- Contact stubs for unknown participants (skip Omrane Senouci)
+- **Contact stubs** — programmatic, not textual instructions:
+```bash
+bun -e "
+import {createContactStubs} from '$TOOLS_DIR/meeting-core';
+const participants = ROUTING_OUTPUT.participants || [];
+const result = createContactStubs(participants, ROUTING_OUTPUT.client || null);
+console.log(JSON.stringify(result));
+"
+```
+- **People sync** — enrich all contact notes with latest data:
+```bash
+bun $TOOLS_DIR/people-sync.ts sync
+```
 - Transition: processing → cr_written → enriched
-- Report: which enablers ran, which skipped, any errors
+- Report: which enablers ran, which skipped, stubs created, any errors
 
 ### 7. Frontmatter assembly
 Use `assembleFrontmatter()` from meeting-core.ts (NOT manual YAML). Pass routing output + CR output.

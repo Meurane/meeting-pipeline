@@ -202,6 +202,110 @@ export function timeDiffMinutes(t1: string, t2: string): number {
   return Math.min(diff, 1440 - diff);
 }
 
+// ============================================================================
+// --- Validation & Normalization ---
+// ============================================================================
+
+const VALID_PROJECT_PHASES = [
+  "besoin", "discovery", "qualification", "proposition",
+  "cadrage", "delivery", "mesure",
+] as const;
+
+/**
+ * Fuzzy-match a raw meeting_type string from LLM to canonical type.
+ * Handles common LLM variations like "Discovery meeting", "sync", "copil", etc.
+ */
+export function normalizeMeetingType(raw: string): MeetingType {
+  if (!raw) return "coordination";
+  const n = norm(raw);
+
+  // Exact match first
+  if ((MEETING_TYPES as readonly string[]).includes(n)) return n as MeetingType;
+
+  // Common LLM variations → canonical mapping
+  const aliases: Record<string, MeetingType> = {
+    "sync": "coordination",
+    "synchronisation": "coordination",
+    "point": "coordination",
+    "standup": "coordination",
+    "status": "coordination",
+    "suivi": "coordination",
+    "revue": "coordination",
+    "review": "coordination",
+    "copil": "steering",
+    "comite de pilotage": "steering",
+    "comite": "steering",
+    "gouvernance": "steering",
+    "atelier": "workshop",
+    "session de travail": "working-session",
+    "travail": "working-session",
+    "lancement": "kickoff",
+    "kick-off": "kickoff",
+    "decouverte": "discovery",
+    "exploration": "discovery",
+    "premier contact": "discovery",
+    "offre": "proposal",
+    "proposition": "proposal",
+    "negociation": "proposal",
+    "networking": "relationship",
+    "informel": "relationship",
+    "qbr": "relationship",
+    "equipe": "internal",
+    "interne": "internal",
+  };
+
+  // Direct alias match
+  if (aliases[n]) return aliases[n];
+
+  // Substring match: check if raw contains a known type or alias
+  for (const mt of MEETING_TYPES) {
+    if (n.includes(mt)) return mt;
+  }
+  for (const [alias, mt] of Object.entries(aliases)) {
+    if (n.includes(alias)) return mt;
+  }
+
+  // Fallback
+  console.warn(`[meeting-core] Unknown meeting_type "${raw}", defaulting to coordination`);
+  return "coordination";
+}
+
+/**
+ * Validate project_phase against known values. Returns null if invalid.
+ */
+export function normalizeProjectPhase(raw: string | undefined | null): string | null {
+  if (!raw) return null;
+  const n = norm(raw);
+  if ((VALID_PROJECT_PHASES as readonly string[]).includes(n)) return n;
+
+  // Common variations
+  const phaseAliases: Record<string, string> = {
+    "besoin": "besoin",
+    "besoins": "besoin",
+    "need": "besoin",
+    "needs": "besoin",
+    "decouverte": "discovery",
+    "explore": "discovery",
+    "qualif": "qualification",
+    "qualifying": "qualification",
+    "proposal": "proposition",
+    "offre": "proposition",
+    "framing": "cadrage",
+    "setup": "cadrage",
+    "execution": "delivery",
+    "production": "delivery",
+    "run": "delivery",
+    "measurement": "mesure",
+    "measure": "mesure",
+    "bilan": "mesure",
+  };
+
+  if (phaseAliases[n]) return phaseAliases[n];
+
+  console.warn(`[meeting-core] Invalid project_phase "${raw}", dropping`);
+  return null;
+}
+
 /** Resolve a client name against canonical entities */
 export function resolveClient(
   raw: string,
@@ -1203,7 +1307,10 @@ export function assembleFrontmatter(
   const clientRaw = routing.client || "Unknown";
   const client = resolveClientWikilink(clientRaw, entities);
   const project = resolveProjectWikilink(routing.project || clientRaw, clientRaw, entities);
-  const meetingType = routing.meeting_type || "coordination";
+
+  // Normalize meeting_type — deterministic, no LLM pass-through
+  const meetingType = normalizeMeetingType(routing.meeting_type || "coordination");
+
   const crFormel = CR_FORMEL_PENDING.includes(meetingType) ? "pending"
     : CR_FORMEL_AUTO_DRAFT.includes(meetingType) ? "auto-draft"
     : "skipped";
@@ -1212,20 +1319,26 @@ export function assembleFrontmatter(
     .map(p => resolveParticipantWikilink(p, entities))
     .filter((v, i, a) => a.indexOf(v) === i);
 
+  // Use cases: normalize to "[[UC — Name]]" format (em dash, not double hyphen)
   const useCases = (crOutput.use_cases || routing.use_cases || [])
-    .map(uc => uc.startsWith("[[") ? uc : `[[UC -- ${uc}]]`)
-    .map(uc => `"${uc}"`);
+    .map(uc => {
+      // Strip existing wikilink/prefix syntax
+      let clean = uc.replace(/^\[\[/, "").replace(/\]\]$/, "")
+        .replace(/^UC\s*[—–-]{1,2}\s*/i, "").trim();
+      return `"[[UC — ${clean}]]"`;
+    })
+    .filter((v, i, a) => a.indexOf(v) === i);
 
   const summary = (crOutput.summary || "").slice(0, 120);
 
-  const extraTags = (crOutput.tags || [])
-    .map(t => t.replace(/^#/, "").replace(/^type\//, ""))
-    .filter(t => t !== "meeting" && t !== meetingType)
-    .slice(0, 3);
-  const tags = ["meeting", meetingType, ...extraTags];
+  // Tags: deterministic — meeting + normalized meeting_type only. No LLM tags.
+  const tags = ["meeting", meetingType];
 
   const dateMatch = transcriptId.match(/^(\d{4}-\d{2}-\d{2})/);
   const date = dateMatch ? dateMatch[1] : new Date().toISOString().slice(0, 10);
+
+  // Normalize project_phase — strict validation, null if invalid
+  const projectPhase = normalizeProjectPhase(routing.project_phase);
 
   // Build YAML
   const lines: string[] = [
@@ -1257,8 +1370,8 @@ export function assembleFrontmatter(
   // Escape quotes and newlines for valid YAML
   lines.push(`summary: "${summary.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, ' ').replace(/\r/g, '')}"`);
 
-  if (routing.project_phase) {
-    lines.push(`project_phase: ${routing.project_phase}`);
+  if (projectPhase) {
+    lines.push(`project_phase: ${projectPhase}`);
   }
 
   lines.push("tags:");
@@ -1497,4 +1610,191 @@ export function addProject(
     aliases: opts.aliases || [],
   };
   saveCanonicalEntities(entities);
+}
+
+// ============================================================================
+// --- Stub Creation (UC + Contact) ---
+// ============================================================================
+
+const VAULT_BASE = join(
+  HOME,
+  "Library/CloudStorage/ProtonDrive-omrane.senouci@proton.me-folder",
+  "03 - Ressources/Omrane Vault"
+);
+
+/**
+ * Create stub notes for use cases that don't exist yet in the vault.
+ * Called after routing, before enablers. Follows Convention de Notes UC schema.
+ *
+ * @param useCases - Array of UC names (without "UC — " prefix or wikilink syntax)
+ * @param projectName - Project name for frontmatter linkage
+ * @param clientName - Client name for folder resolution
+ * @returns Object with created and skipped counts + paths
+ */
+export function createUCStubs(
+  useCases: string[],
+  projectName: string | null,
+  clientName: string | null
+): { created: string[]; skipped: string[] } {
+  const created: string[] = [];
+  const skipped: string[] = [];
+
+  if (!useCases || useCases.length === 0) return { created, skipped };
+
+  // Resolve project folder — Convention: 20 - Projects/{Project}/Use Cases/
+  const projectDir = projectName
+    ? join(VAULT_BASE, "20 - Projects", projectName)
+    : null;
+  const ucDir = projectDir
+    ? join(projectDir, "Use Cases")
+    : join(VAULT_BASE, "20 - Projects", "Use Cases");
+
+  if (!existsSync(ucDir)) {
+    mkdirSync(ucDir, { recursive: true });
+  }
+
+  const entities = loadCanonicalEntities();
+  const today = new Date().toISOString().slice(0, 10);
+
+  for (const rawUC of useCases) {
+    // Normalize: strip "UC — ", "UC -- ", "UC - " prefix and wikilink syntax if present
+    let ucName = rawUC
+      .replace(/^\[\[/, "").replace(/\]\]$/, "")
+      .replace(/^UC\s*[—–]+\s*/i, "")  // em dash, en dash
+      .replace(/^UC\s*-{1,2}\s*/i, "")  // single/double hyphen
+      .trim();
+    if (!ucName) continue;
+
+    // Sanitize filename: replace / \ : * ? " < > | with -
+    const safeName = ucName.replace(/[/\\:*?"<>|]/g, "-");
+    const fileName = `UC — ${safeName}.md`;
+    const filePath = join(ucDir, fileName);
+
+    if (existsSync(filePath)) {
+      skipped.push(ucName);
+      continue;
+    }
+
+    // Also check if file exists elsewhere in vault (search by name)
+    const altPaths = [
+      join(VAULT_BASE, "20 - Projects", fileName),
+    ];
+    if (altPaths.some(p => existsSync(p))) {
+      skipped.push(ucName);
+      continue;
+    }
+
+    // Build stub from Convention de Notes UC schema
+    const projectWikilink = projectName
+      ? resolveProjectWikilink(projectName, clientName || "", entities)
+      : "";
+    const projectField = projectWikilink
+      ? `project: "${projectWikilink}"`
+      : `project: ""`;
+
+    const stub = [
+      "---",
+      "type: use-case",
+      projectField,
+      'function: ""',
+      "status: besoin",
+      'owner: ""',
+      "decision: null",
+      `created: ${today}`,
+      "---",
+      "",
+      `# UC — ${ucName}`,
+      "",
+      "## Résumé",
+      "",
+      "*À compléter après le premier échange.*",
+      "",
+      "## AIQ Qualification",
+      "",
+      "> En attente de qualification.",
+      "",
+      "## Historique des échanges",
+      "",
+      "## Notes & Décisions",
+      "",
+      "## Prochaines étapes",
+      "",
+    ].join("\n");
+
+    require("fs").writeFileSync(filePath, stub);
+    created.push(ucName);
+  }
+
+  return { created, skipped };
+}
+
+/**
+ * Create stub People notes for participants that don't have vault entries.
+ * Called after CR is written. Follows Convention de Notes Contact schema.
+ *
+ * @param participants - Array of participant names (canonical or raw)
+ * @param clientName - Client name for company field
+ * @returns Object with created and skipped counts
+ */
+export function createContactStubs(
+  participants: string[],
+  clientName: string | null
+): { created: string[]; skipped: string[] } {
+  const created: string[] = [];
+  const skipped: string[] = [];
+
+  if (!participants || participants.length === 0) return { created, skipped };
+
+  const entities = loadCanonicalEntities();
+  const peopleDir = PATHS.vaultPeople;
+
+  if (!existsSync(peopleDir)) {
+    mkdirSync(peopleDir, { recursive: true });
+  }
+
+  for (const rawName of participants) {
+    // Strip wikilink syntax
+    const name = rawName.replace(/^\[\[/, "").replace(/\]\]$/, "").replace(/"/g, "").trim();
+    if (!name) continue;
+
+    // Skip self
+    const contact = entities.contacts[name];
+    if (contact?.is_self) continue;
+    const selfEntry = Object.entries(entities.contacts).find(([_, d]) => d.is_self);
+    if (selfEntry && (norm(selfEntry[0]) === norm(name) || selfEntry[1].aliases.some(a => norm(a) === norm(name)))) continue;
+
+    const filePath = join(peopleDir, `${name}.md`);
+    if (existsSync(filePath)) {
+      skipped.push(name);
+      continue;
+    }
+
+    // Resolve company wikilink
+    const companyWikilink = clientName
+      ? resolveClientWikilink(clientName, entities)
+      : '""';
+
+    const stub = [
+      "---",
+      "type: contact",
+      `company: "${companyWikilink}"`,
+      'role: ""',
+      "---",
+      "",
+      `# ${name}`,
+      "",
+      "## Bio",
+      `- Entreprise : ${companyWikilink}`,
+      "- Rôle : ",
+      "- Contexte : ",
+      "",
+      "## Notes",
+      "",
+    ].join("\n");
+
+    require("fs").writeFileSync(filePath, stub);
+    created.push(name);
+  }
+
+  return { created, skipped };
 }
